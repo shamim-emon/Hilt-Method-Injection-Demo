@@ -1,47 +1,48 @@
 package com.emon.hiltmethodinjectiondemo
 
+import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.emon.hiltmethodinjectiondemo.ui.theme.HiltMethodInjectionDemoTheme
+import androidx.core.app.ActivityCompat
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+const val TAG = "Hilt-method-injection-demo"
+
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var cameraManager: CameraManager
+    private lateinit var permissionChecker: PermissionChecker
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            HiltMethodInjectionDemoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+        setContentView(R.layout.activity_camera)
+    }
+
+    @Inject
+    fun initializeDependencies(permissionChecker: PermissionChecker) {
+        this.permissionChecker = permissionChecker
+        Log.d(TAG, "PermissionChecker initialized")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (permissionChecker.hasCameraPermission()) {
+            cameraManager.initializeCamera()
+        } else {
+            requestCameraPermission()
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            this, arrayOf(Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST_CODE
+        )
+    }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    HiltMethodInjectionDemoTheme {
-        Greeting("Android")
+    companion object {
+        private const val CAMERA_PERMISSION_REQUEST_CODE = 1001
     }
 }
